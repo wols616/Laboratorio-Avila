@@ -11,6 +11,18 @@ exports.login = (req, res) => {
         return res.status(400).json({ message: "Nombre de usuario y contraseña son requeridos" });
     }
 
+    /*
+Para efectos de depuración: imprime la contraseña recibida y su hash (solo para pruebas), les puede ayudar para su usuario
+     bcrypt.hash(contrasena, 10, (err, hash) => {
+    if (err) {
+        console.error("Error al hashear la contraseña:", err);
+    } else {
+        console.log("Contraseña recibida:", contrasena);
+        console.log("Contraseña hasheada:", hash);
+    }
+});
+*/
+
     db.query(
         "SELECT * FROM usuario WHERE nombre_usuario = ?",
         [nombre_usuario],
@@ -21,40 +33,19 @@ exports.login = (req, res) => {
             const user = results[0];
 
             // Validar si la cuenta está desactivada
-            if (user.estado === 0) {
+            if (user.estado == 0) {
                 return res.status(403).json({
                     message: "Tu cuenta está desactivada. Por favor, contacta al administrador al correo maicol.monge@catolica.edu.sv"
                 });
             }
 
             // Validar contraseña
-            const match = await bcrypt.compare(contrasena, user.contrasena);
+            const match = await bcrypt.compare(contrasena, user.password);
             if (!match) return res.status(401).json({ message: "Correo o contraseña incorrectos" });
 
-            // Si requiere cambio de contraseña
-            /*if (user.requiere_cambio_contrasena === 1) {
-                const payload = {
-                    id_usuario: user.id_usuario,
-                    correo: user.correo,
-                    privilegio: user.privilegio
-                };
-                
-                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
-
-
-                return res.status(200).json({
-                    message: "Contraseña genérica detectada, debe cambiarla",
-                    requirePasswordChange: true,
-                    token, // <-- aquí va el JWT
-                    user: {
-                        id_usuario: user.id_usuario,
-                        correo: user.correo
-                    }
-                });
-            }
-
-            */
             // Login normal: genera el token
+
+            
             const payload = {
                 id_usuario: user.id_usuario,
                 nombre_usuario: user.nombre_usuario,
@@ -77,7 +68,7 @@ exports.login = (req, res) => {
         }
     );
 };
-
+/*
 exports.registrar = (req, res) => {
     const { nombres, apellidos, direccion, telefono, correo, privilegio, imagen, fecha_nacimiento, sexo, especialidad } = req.body;
 
@@ -153,6 +144,6 @@ exports.registrar = (req, res) => {
         });
     });
 };
-
+*/
 
 

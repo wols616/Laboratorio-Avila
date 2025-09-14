@@ -4,17 +4,15 @@ import axios from "axios";
 import Swal from "sweetalert2";
 
 const LoginForm = () => {
-    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [showForgot, setShowForgot] = useState(false);
-    const [forgotEmail, setForgotEmail] = useState("");
+    const [username, setUsername] = useState("");
     const navigate = useNavigate();
 
     const handleLogin = () => {
-        if (email && password) {
+        if (username && password) {
             axios
-                .post("http://localhost:5000/api/users/login", { correo: email, contrasena: password })
+                .post("http://localhost:5000/api/users/login", { nombre_usuario: username, contrasena: password })
                 .then((response) => {
                     const data = response.data;
                     // Si requiere cambio de contraseña, redirige a establecer contraseña
@@ -38,10 +36,11 @@ const LoginForm = () => {
                         */
                     // Login normal: guarda token y datos de usuario
                     const { id_usuario, nombre, apellido, nombre_usuario, rol, estado } = data.user;
-                    localStorage.setItem("user", JSON.stringify({ id_usuario, nombre, apellido, nombre_usuario, rol, estado }));
+                    localStorage.setItem("user", JSON.stringify({ id_usuario, nombre, apellido, nombre_usuario, rol: Number(rol), estado }));
                     localStorage.setItem("token", data.token); // Guarda el token para futuras peticiones
-
-                    if (rol === 0) {
+                    console.log("Usuario con rol:", rol);
+                    if (rol == 0) {
+                        console.log("Navegando a /home_normal");
                         navigate("/home_normal");
                     } /* else if (rol === 1) {
                         navigate("/home_paciente");
@@ -107,9 +106,9 @@ const LoginForm = () => {
                     <input
                         className="form-control mb-3"
                         type="text"
-                        placeholder="Correo electrónico"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Nombre de usuario"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
                         autoComplete="username"
                     />
                     <div className="input-group mb-4">
