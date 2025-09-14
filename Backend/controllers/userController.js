@@ -5,26 +5,25 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.login = (req, res) => {
-    const { correo, contrasena } = req.body;
+    const { nombre_usuario, contrasena } = req.body;
 
-    
-    if (!correo || !contrasena) {
-        return res.status(400).json({ message: "Correo y contraseña son requeridos" });
+    if (!nombre_usuario || !contrasena) {
+        return res.status(400).json({ message: "Nombre de usuario y contraseña son requeridos" });
     }
 
     db.query(
-        "SELECT * FROM usuario WHERE correo = ?",
-        [correo],
+        "SELECT * FROM usuario WHERE nombre_usuario = ?",
+        [nombre_usuario],
         async (err, results) => {
             if (err) return res.status(500).json({ message: "Error en el servidor" });
-            if (results.length === 0) return res.status(401).json({ message: "Correo o contraseña incorrectos" });
+            if (results.length === 0) return res.status(401).json({ message: "Nombre de usuario o contraseña incorrectos" });
 
             const user = results[0];
 
             // Validar si la cuenta está desactivada
             if (user.estado === 0) {
                 return res.status(403).json({
-                    message: "Tu cuenta está desactivada. Por favor, contacta al administrador al correo aplicaciondediagnosticodetea@gmail.com"
+                    message: "Tu cuenta está desactivada. Por favor, contacta al administrador al correo maicol.monge@catolica.edu.sv"
                 });
             }
 
@@ -33,12 +32,13 @@ exports.login = (req, res) => {
             if (!match) return res.status(401).json({ message: "Correo o contraseña incorrectos" });
 
             // Si requiere cambio de contraseña
-            if (user.requiere_cambio_contrasena === 1) {
+            /*if (user.requiere_cambio_contrasena === 1) {
                 const payload = {
                     id_usuario: user.id_usuario,
                     correo: user.correo,
                     privilegio: user.privilegio
                 };
+                
                 const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
 
@@ -53,27 +53,24 @@ exports.login = (req, res) => {
                 });
             }
 
+            */
             // Login normal: genera el token
             const payload = {
                 id_usuario: user.id_usuario,
-                correo: user.correo,
-                privilegio: user.privilegio
+                nombre_usuario: user.nombre_usuario,
+                rol: user.rol
             };
             const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
             return res.status(200).json({
                 message: "Inicio de sesión exitoso",
-                requirePasswordChange: false,
                 token, // <-- aquí va el JWT
                 user: {
                     id_usuario: user.id_usuario,
-                    nombres: user.nombres,
-                    apellidos: user.apellidos,
-                    direccion: user.direccion,
-                    telefono: user.telefono,
-                    correo: user.correo,
-                    privilegio: user.privilegio,
-                    imagen: user.imagen,
+                    nombre: user.nombre,
+                    apellido: user.apellido,
+                    nombre_usuario: user.nombre_usuario,
+                    rol: user.rol,
                     estado: user.estado
                 }
             });
