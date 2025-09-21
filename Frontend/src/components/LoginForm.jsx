@@ -15,25 +15,6 @@ const LoginForm = () => {
                 .post("http://localhost:5000/api/users/login", { nombre_usuario: username, contrasena: password })
                 .then((response) => {
                     const data = response.data;
-                    // Si requiere cambio de contraseña, redirige a establecer contraseña
-                    /*if (data.requirePasswordChange) {
-                        Swal.fire({
-                            title: "¡Bienvenido!",
-                            text: "Por seguridad, debes establecer una nueva contraseña.",
-                            icon: "info",
-                            confirmButtonText: "Continuar"
-                        }).then(() => {
-                            localStorage.setItem("token", data.token);
-                            navigate("/establecer-contra", {
-                                state: {
-                                    id_usuario: data.user.id_usuario,
-                                    correo: data.user.correo
-                                }
-                            });
-                        });
-                        return;
-                    }
-                        */
                     // Login normal: guarda token y datos de usuario
                     const { id_usuario, nombre, apellido, nombre_usuario, rol, estado } = data.user;
                     localStorage.setItem("user", JSON.stringify({ id_usuario, nombre, apellido, nombre_usuario, rol: Number(rol), estado }));
@@ -42,14 +23,7 @@ const LoginForm = () => {
                     if (rol == 0) {
                         console.log("Navegando a /home_normal");
                         navigate("/home_normal");
-                    } /* else if (rol === 1) {
-                        navigate("/home_paciente");
-                    }else if (rol === 3) {
-                        navigate("/admin/home");
-                    }else {
-                        navigate("/");
                     }
-                        */
                 })
                 .catch((error) => {
                     Swal.fire({
@@ -71,30 +45,6 @@ const LoginForm = () => {
         }
     };
 
-    /*
-    const handleForgotPassword = async (e) => {
-        e.preventDefault();
-        if (!forgotEmail) return;
-        try {
-            await axios.post("http://localhost:5000/api/users/recuperar-contrasena", { correo: forgotEmail });
-            Swal.fire({
-                title: "¡Revisa tu correo!",
-                text: "Si el correo está registrado, recibirás una nueva contraseña.",
-                icon: "success",
-                confirmButtonText: "Aceptar"
-            });
-            setShowForgot(false);
-            setForgotEmail("");
-        } catch (err) {
-            Swal.fire({
-                title: "Error",
-                text: err.response?.data?.message || "No se pudo enviar el correo.",
-                icon: "error",
-                confirmButtonText: "Aceptar"
-            });
-        }
-    };
-    */
 
     return (
         <div className="container-fluid d-flex justify-content-center align-items-center px-2">

@@ -106,5 +106,40 @@ exports.registrar = (req, res) => {
     });
 };
 
+// Cambiar contraseña del usuario autenticado
+exports.changePassword = (req, res) => {
+    const userId = req.user && req.user.id_usuario;
+    if (!userId) return res.status(401).json({ message: 'No autorizado' });
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ message: 'Se requieren currentPassword, newPassword y confirmPassword' });
+    }
+    if (newPassword !== confirmPassword) return res.status(400).json({ message: 'La nueva contraseña y la confirmación no coinciden' });
+    // Política de contraseña: mínimo 8 caracteres, al menos una mayúscula, un número y un carácter especial
+    if (newPassword.length < 8) return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 8 caracteres' });
+    const strongRe = /(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/;
+    if (!strongRe.test(newPassword)) return res.status(400).json({ message: 'La nueva contraseña debe contener al menos una mayúscula, un número y un carácter especial' });
+
+    // Obtener usuario actual
+    db.query('SELECT * FROM usuario WHERE id_usuario = ?', [userId], async (err, results) => {
+        if (err) return res.status(500).json({ message: 'Error en el servidor', error: err });
+        if (results.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+        const user = results[0];
+        const match = await bcrypt.compare(currentPassword, user.password);
+        if (!match) return res.status(401).json({ message: 'Contraseña actual incorrecta' });
+
+        // Hashear la nueva contraseña
+        bcrypt.hash(newPassword, 10, (err2, hashed) => {
+            if (err2) return res.status(500).json({ message: 'Error al encriptar la contraseña', error: err2 });
+            db.query('UPDATE usuario SET password = ?, updated_at = NOW() WHERE id_usuario = ?', [hashed, userId], (err3) => {
+                if (err3) return res.status(500).json({ message: 'Error al actualizar contraseña', error: err3 });
+                return res.status(200).json({ message: 'Contraseña actualizada correctamente' });
+            });
+        });
+    });
+};
+
 
 

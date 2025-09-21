@@ -1,8 +1,11 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import ProtectedRoute from "./ProtectedRoute";
+import Navbar from "./components/Navbar";
 import LoginPage from "./Login/LoginPage";
-import Home_Normal from "./Home/home_normal";
+import Home_Normal from "./Home/Home";
+import Pacientes from "./Pacientes/Pacientes";
+import Administrador from "./components/Administrador";
 import './App.css'
 
 function App() {
@@ -34,25 +37,33 @@ function App() {
 
   return (
     <Router>
+      <InnerApp />
+    </Router>
+  );
+}
+
+function InnerApp() {
+  const location = useLocation();
+  const showNavbar = location.pathname !== "/";
+
+  return (
+    <>
+      {showNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        {/* Solo admin (rol 0) puede ver estas rutas */}
         <Route element={<ProtectedRoute allowedPrivileges={[0]} />}>
           <Route path="/home_normal" element={<Home_Normal />} />
         </Route>
-        {/*
-        Solo pacientes (privilegio 1)
-        <Route element={<ProtectedRoute allowedPrivileges={[1]} />}>
-          <Route path="/home_paciente" element={<Home_Paciente />} />
-          <Route path="/consentimiento-informado" element={<ConsentimientoInformado />} />
+        <Route element={<ProtectedRoute allowedPrivileges={[0]} />}>
+          <Route path="/administrador" element={<Administrador />} />
         </Route>
-        */}
-        {/* Solo admin (privilegio 3) 
-        <Route element={<ProtectedRoute allowedPrivileges={[3]} />}>
-          <Route path="/admin/home" element={<HomeAdmin />} />
+        <Route element={<ProtectedRoute allowedPrivileges={[0]} />}>
+          <Route path="/pacientes" element={<Pacientes />} />
         </Route>
-        */}
+        
       </Routes>
-    </Router>
+    </>
   );
 }
 
