@@ -1,15 +1,17 @@
 import { useState } from "react";
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
 
     return (
         <div
-            className="container-fluid min-vh-100 d-flex align-items-center justify-content-center"
+            className="container-fluid page-full-screen min-vh-100 d-flex align-items-center justify-content-center p-0"
             style={{
-                background: "linear-gradient(135deg, #00C2CC 60%, #ffffff 40%)",
+                background: "linear-gradient(135deg, #ffffff 60%,  #00C2CC 40%)",
             }}
         >
+        {/* container interno sólo para limitar ancho del contenido centrado */}
         <div className="container">
 
             
@@ -21,20 +23,20 @@ const LoginPage = () => {
                     alt="Logo de Lab Avila"
                     className="mb-4"
                     style={{
-                        maxWidth: "180px",
+                        maxWidth: "300px",
                         height: "auto",
                         filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.2))"
                     }}
                 />
-                <h1 className="fw-bold mb-1" style={{ fontSize: "2rem" }}>
-                    ¡Bienvenido!
+                <h1 className="fw-bold mb-1" style={{ fontSize: "2rem", color: "#00C2CC", fontWeight: "bold"}}>
+                    ¡Bienvenidos!
                 </h1>
+                <br />
                 <p
                     className="text-center"
-                    style={{ maxWidth: "420px", fontSize: "1.15rem", lineHeight: "1.6" }}
+                    style={{ maxWidth: "420px", fontSize: "1.15rem", lineHeight: "1.6", color: "#00C2CC", fontWeight: "bold" }}
                 >
-                    Accede a tu cuenta para continuar.  
-                    Tu seguridad y experiencia moderna están garantizadas.
+                    El mejor laboratorio clínico de Ahuachapan.
                 </p>
         </div>
 
@@ -120,29 +122,11 @@ const LoginPage = () => {
                                 Ingresar
                             </button>
                         </form>
-
-                        {/* Registro */}
-                        <p
-                            className="text-center mt-4"
-                            style={{ fontSize: "0.9rem", color: "#6c757d" }}
-                        >
-                            ¿No tienes cuenta?{" "}
-                            <a
-                                href="#"
-                                style={{
-                                    color: "#00C2CC",
-                                    textDecoration: "none",
-                                    fontWeight: "bold",
-                                }}
-                            >
-                                Regístrate aquí
-                            </a>
-                        </p>
                     </div>
                 </div>
             </div>
             
-        </div>
+        </div>{/* /.container */}
         </div>
     );
 };
