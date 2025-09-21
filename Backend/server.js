@@ -5,6 +5,7 @@ const cors = require("cors"); //Para permitir solicitudes desde otro dominio
 const db = require("./config/db");
 const userRoutes = require("./routes/userRoutes");
 const pacienteRoutes = require("./routes/pacienteRoutes");
+const inventarioRoutes = require("./routes/inventarioRoutes");
 
 const app = express(); //Instancia del servidor
 app.use(cors()); //Evitar errores al consumir en React
@@ -21,6 +22,7 @@ db.connect((err) => {
 // Rutas
 app.use("/api/users", userRoutes);
 app.use("/api/pacientes", pacienteRoutes);
+app.use("/api/inventario", inventarioRoutes);
 
 // Iniciar servidor
 const PORT = process.env.PORT || 5000;
