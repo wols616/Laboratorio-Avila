@@ -99,92 +99,90 @@ const LoginForm = () => {
     return (
         <div className="container-fluid d-flex justify-content-center align-items-center px-2">
             <div className="w-100" style={{ maxWidth: 400 }}>
-                <div className="text-center mb-3">
-                    <p className="fw-bold" style={{ color: "#f3859e", fontSize: "1.2rem" }}>Iniciar sesión</p>
-                </div>
-                <div>
-                    <input
-                        className="form-control mb-3"
-                        type="text"
-                        placeholder="Nombre de usuario"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        autoComplete="username"
-                    />
-                    <div className="input-group mb-4">
+                <h2
+                    className="fw-bold mb-4 text-center"
+                    style={{ color: "#00C2CC" }}
+                >
+                    Iniciar Sesión
+                </h2>
+
+                <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+                    {/* Usuario */}
+                    <div className="mb-3">
+                        <label className="form-label fw-semibold">
+                            Usuario
+                        </label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Ingresa tu usuario"
+                            style={{
+                                borderRadius: "10px",
+                                padding: "0.75rem",
+                            }}
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            autoComplete="username"
+                        />
+                    </div>
+
+                    {/* Contraseña con ojito */}
+                    <div className="mb-3 position-relative">
+                        <label className="form-label fw-semibold">
+                            Contraseña
+                        </label>
                         <input
                             type={showPassword ? "text" : "password"}
                             className="form-control"
-                            placeholder="Contraseña"
+                            placeholder="Ingresa tu contraseña"
+                            style={{
+                                borderRadius: "10px",
+                                padding: "0.75rem 2.5rem 0.75rem 0.75rem",
+                            }}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             autoComplete="current-password"
                         />
-                        <span
-                            className="input-group-text"
+                        <i
+                            className={`bi ${
+                                showPassword
+                                    ? "bi-eye-slash-fill"
+                                    : "bi-eye-fill"
+                            }`}
+                            style={{
+                                position: "absolute",
+                                top: "65%",
+                                right: "15px",
+                                transform: "translateY(-50%)",
+                                cursor: "pointer",
+                                fontSize: "1.2rem",
+                                color: "#00C2CC",
+                            }}
                             onClick={() => setShowPassword(!showPassword)}
-                            style={{ cursor: "pointer" }}
-                        >
-                            {showPassword ? (
-                                <i className="bi bi-eye-slash-fill fs-5" style={{color: '#f3859e'}}></i>
-                            ) : (
-                                <i className="bi bi-eye-fill fs-5" style={{color: '#f3859e'}}></i>
-                            )}
-                        </span>
+                        ></i>
                     </div>
+
+                    {/* Botón login */}
                     <button
-                        type="button"
-                        className="btn w-100"
-                        style={{ background: "#457b9d", color: "#fff" }}
-                        onClick={handleLogin}
+                        type="submit"
+                        className="btn w-100 fw-bold text-white mt-2"
+                        style={{
+                            backgroundColor: "#00C2CC",
+                            borderRadius: "30px",
+                            padding: "0.8rem",
+                            fontSize: "1rem",
+                            transition: "all 0.3s ease",
+                        }}
+                        onMouseOver={(e) =>
+                            (e.target.style.backgroundColor = "#0099a3")
+                        }
+                        onMouseOut={(e) =>
+                            (e.target.style.backgroundColor = "#00C2CC")
+                        }
                     >
-                        Acceder
+                        Ingresar
                     </button>
-                    <div className="text-center mt-3">
-                        <button
-                            className="btn btn-link p-0"
-                            style={{ color: "#f3859e", textDecoration: "underline" }}
-                            onClick={() => setShowForgot(true)}
-                        >
-                            ¿Olvidaste tu contraseña?
-                        </button>
-                    </div>
-                    {/* Modal simple */}
-                    {/* 
-                    {showForgot && (
-                        <div className="modal d-block" tabIndex="-1" style={{ background: "rgba(0,0,0,0.3)" }}>
-                            <div className="modal-dialog modal-dialog-centered">
-                                <div className="modal-content">
-                                    <div className="modal-header">
-                                        <h5 className="modal-title">Recuperar contraseña</h5>
-                                        <button type="button" className="btn-close" onClick={() => setShowForgot(false)}></button>
-                                    </div>
-                                    <form onSubmit={handleForgotPassword}>
-                                        <div className="modal-body">
-                                            <label>Correo electrónico</label>
-                                            <input
-                                                type="email"
-                                                className="form-control"
-                                                value={forgotEmail}
-                                                onChange={e => setForgotEmail(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="modal-footer">
-                                            <button type="button" className="btn btn-secondary" onClick={() => setShowForgot(false)}>
-                                                Cancelar
-                                            </button>
-                                            <button type="submit" className="btn btn-primary" style={{ background: "#457b9d" }}>
-                                                Enviar
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    */}
-                </div>
+                </form>
             </div>
         </div>
     );
