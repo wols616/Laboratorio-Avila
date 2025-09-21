@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import ProtectedRoute from "./ProtectedRoute";
 import LoginPage from "./Login/LoginPage";
 import Home_Normal from "./Home/home_normal";
-import AdminRegister from "./components/AdminRegister";
 import './App.css'
 
 function App() {
@@ -47,8 +46,6 @@ function App() {
           <Route path="/consentimiento-informado" element={<ConsentimientoInformado />} />
         </Route>
         */}
-        {/* Ruta temporal para registrar un admin desde la UI */}
-        <Route path="/register" element={<AdminRegister />} />
         {/* Solo admin (privilegio 3) 
         <Route element={<ProtectedRoute allowedPrivileges={[3]} />}>
           <Route path="/admin/home" element={<HomeAdmin />} />
