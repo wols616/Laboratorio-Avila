@@ -1,6 +1,5 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
-const generatePassword = require('generate-password');
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -68,82 +67,44 @@ Para efectos de depuración: imprime la contraseña recibida y su hash (solo par
         }
     );
 };
-/*
+
+//Metodo temporal, se espera que ya no se use
+// Registrar según la tabla `usuario` proporcionada:
+// Campos esperados en req.body: nombre, apellido, nombre_usuario, password (o contrasena), rol, estado (opcional)
 exports.registrar = (req, res) => {
-    const { nombres, apellidos, direccion, telefono, correo, privilegio, imagen, fecha_nacimiento, sexo, especialidad } = req.body;
+    const { nombre, apellido, nombre_usuario, password, rol, estado, contrasena } = req.body;
+    const pwd = password || contrasena; // aceptar ambas variantes por compatibilidad
 
-    if (!nombres || !apellidos || !direccion || !telefono || !correo || privilegio === undefined) {
-        return res.status(400).json({ message: "Todos los campos requeridos deben ser enviados" });
+    if (!nombre || !apellido || !nombre_usuario || !pwd || rol === undefined) {
+        return res.status(400).json({ message: "Los campos nombre, apellido, nombre_usuario, password y rol son requeridos" });
     }
 
-    if (![0, 1].includes(Number(privilegio))) {
-        return res.status(400).json({ message: "Privilegio no válido" });
-    }
+    // Verificar duplicado de nombre_usuario
+    db.query("SELECT id_usuario FROM usuario WHERE nombre_usuario = ?", [nombre_usuario], (err, results) => {
+        if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
+        if (results.length > 0) return res.status(409).json({ message: "El nombre de usuario ya está registrado" });
 
-    // Validaciones adicionales según privilegio
-    if (Number(privilegio) === 1) {
-        if (!fecha_nacimiento || !sexo) {
-            return res.status(400).json({ message: "Fecha de nacimiento y sexo son requeridos para paciente." });
-        }
-        if (!['M', 'F'].includes(sexo)) {
-            return res.status(400).json({ message: "Sexo debe ser 'M' o 'F'." });
-        }
-    }
-    if (Number(privilegio) === 0) {
-        if (!especialidad) {
-            return res.status(400).json({ message: "Especialidad es requerida para especialista." });
-        }
-    }
+        // Hashear la contraseña
+        bcrypt.hash(pwd, 10, (err, hashedPassword) => {
+            if (err) return res.status(500).json({ message: "Error al encriptar la contraseña", error: err });
 
-    // Generar contraseña genérica aleatoria y segura
-    const contrasenaGenerica = generatePassword.generate({
-        length: 15,
-        numbers: true,
-        symbols: true,
-        uppercase: true,
-        lowercase: true,
-        strict: true
-    });
-
-    bcrypt.hash(contrasenaGenerica, 10, (err, hashedContrasenaGenerica) => {
-        if (err) {
-            return res.status(500).json({ message: "Error al encriptar la contraseña", error: err });
-        }
-
-        const query = "INSERT INTO usuario (nombres, apellidos, direccion, telefono, correo, contrasena, privilegio, imagen, estado, requiere_cambio_contrasena) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        db.query(query, [nombres, apellidos, direccion, telefono, correo, hashedContrasenaGenerica, privilegio, imagen || null, 1, 1], (err, results) => {
-            if (err) {
-                if (err.code === "ER_DUP_ENTRY") {
-                    return res.status(409).json({ message: "El correo ya está registrado" });
+            const query = `INSERT INTO usuario (nombre, apellido, nombre_usuario, password, rol, estado, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`;
+            const estadoVal = typeof estado !== 'undefined' ? String(estado) : '1';
+            db.query(query, [nombre, apellido, nombre_usuario, hashedPassword, String(rol), estadoVal], (err, result) => {
+                if (err) {
+                    // manejar duplicados por clave única si existen
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        return res.status(409).json({ message: 'El nombre de usuario ya está registrado' });
+                    }
+                    return res.status(500).json({ message: 'Error en el servidor', error: err });
                 }
-                return res.status(500).json({ message: "Error en el servidor", error: err });
-            }
 
-            const id_usuario = results.insertId;
-
-            // Insertar en tabla paciente o especialista según privilegio
-            if (Number(privilegio) === 1) {
-                const pacienteQuery = "INSERT INTO paciente (id_usuario, fecha_nacimiento, sexo) VALUES (?, ?, ?)";
-                db.query(pacienteQuery, [id_usuario, fecha_nacimiento, sexo], (err) => {
-                    if (err) {
-                        return res.status(500).json({ message: "Error al registrar paciente", error: err });
-                    }
-                    enviarCorreoBienvenida(correo, contrasenaGenerica, nombres, apellidos);
-                    return res.status(201).json({ message: "Paciente registrado exitosamente", userId: id_usuario });
-                });
-            } else if (Number(privilegio) === 0) {
-                const especialistaQuery = "INSERT INTO especialista (id_usuario, especialidad) VALUES (?, ?)";
-                db.query(especialistaQuery, [id_usuario, especialidad], (err) => {
-                    if (err) {
-                        return res.status(500).json({ message: "Error al registrar especialista", error: err });
-                    }
-                    enviarCorreoBienvenida(correo, contrasenaGenerica, nombres, apellidos);
-                    return res.status(201).json({ message: "Especialista registrado exitosamente", userId: id_usuario });
-                });
-            }
+                const id_usuario = result.insertId;
+                return res.status(201).json({ message: 'Usuario registrado correctamente', id_usuario });
+            });
         });
     });
 };
-*/
+
 
 
