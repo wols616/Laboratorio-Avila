@@ -2,12 +2,19 @@ import React from "react";
 
 function Home_Normal() {
   return (
-    <div>
-      <h1>Bienvenido a Home Normal</h1>
-      <p>Esta es la página principal para usuarios normales.</p>
-      <div className="mt-3">
-        <a className="btn btn-primary" href="/pacientes">Ir a Pacientes</a>
-      </div>
+    <div
+      style={{
+        backgroundColor: "#F0F0F0",
+        minHeight: "100vh",
+        marginLeft: "250px", // mismo ancho que el sidebar
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <h2 className="fw-bold" style={{ color: "#00C2CC" }}>
+        Bienvenido
+      </h2>
     </div>
   );
 }
