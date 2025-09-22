@@ -5,6 +5,9 @@ import Navbar from "./components/Navbar";
 import LoginPage from "./Login/LoginPage";
 import Home_Normal from "./Home/Home";
 import Pacientes from "./Pacientes/Pacientes";
+import FichaPaciente from "./Pacientes/FichaPaciente";
+import Inventario from "./Inventario/Inventario";
+import Producto from "./Inventario/Producto";
 import Administrador from "./components/Administrador";
 import './App.css'
 
@@ -60,7 +63,11 @@ function InnerApp() {
         </Route>
         <Route element={<ProtectedRoute allowedPrivileges={[0]} />}>
           <Route path="/pacientes" element={<Pacientes />} />
+          <Route path="/inventario" element={<Inventario />} />
+          <Route path="/fichaPaciente" element={<FichaPaciente />} />
+          <Route path="/producto" element={<Producto />} />
         </Route>
+        
         
       </Routes>
     </>
