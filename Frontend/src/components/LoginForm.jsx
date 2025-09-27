@@ -133,6 +133,9 @@ const LoginForm = () => {
                         Ingresar
                     </button>
                 </form>
+                            <div className="text-center mt-3">
+                                <a href="/recuperar" className="text-decoration-none" style={{ color: '#00C2CC' }}>¿Olvidaste tu contraseña?</a>
+                            </div>
             </div>
         </div>
     );

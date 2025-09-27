@@ -29,6 +29,7 @@ export default function Pacientes() {
     apellido: "",
     fecha_nacimiento: "",
     edad: "",
+    sexo: "",
     dui: "",
     telefono: ""
   });
@@ -57,6 +58,16 @@ export default function Pacientes() {
     return edad;
   };
 
+  const sexoLabel = (s) => {
+    if (!s) return '-';
+    const v = String(s).toUpperCase();
+    if (v === 'M') return 'Masculino';
+    if (v === 'F') return 'Femenino';
+    if (v === 'O') return 'Otro';
+    if (v === 'U') return 'No especificado';
+    return s;
+  };
+
   // ---------- FETCH ----------
   const fetchPacientes = async () => {
     setLoading(true);
@@ -69,7 +80,12 @@ export default function Pacientes() {
         throw new Error(text || "Error al cargar pacientes");
       }
       const data = await res.json();
-      setPacientes(data);
+      // normalizar sexo a mayúscula para uso consistente en UI
+      const normalized = (Array.isArray(data) ? data : []).map((p) => ({
+        ...p,
+        sexo: p && p.sexo ? String(p.sexo).toUpperCase() : 'U'
+      }));
+      setPacientes(normalized);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -89,6 +105,7 @@ export default function Pacientes() {
       apellido: "",
       fecha_nacimiento: "",
       edad: "",
+      sexo: "",
       dui: "",
       telefono: ""
     });
@@ -98,6 +115,12 @@ export default function Pacientes() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    // edad manual: cuando el usuario edita la edad, actualizarla y limpiar DUI (para forzar reingreso si aplica)
+    if (name === "edad") {
+      const val = value;
+      setForm((f) => ({ ...f, edad: val, dui: "" }));
+      return;
+    }
     // telefono ####-####
     if (name === "telefono") {
       const formatted = value.replace(/\D/g, "").slice(0, 8).replace(/(\d{4})(\d{0,4})/, "$1-$2");
@@ -135,10 +158,37 @@ export default function Pacientes() {
     return edad;
   })();
 
+  // Priorizar fecha_nacimiento: si hay fecha limpiamos edad; además limpiar DUI cuando la edad (calculada o manual) sea <18
+  useEffect(() => {
+    // limpiar campo edad si hay fecha
+    if (form.fecha_nacimiento && form.edad) {
+      setForm((f) => ({ ...f, edad: "" }));
+    }
+
+    // si es menor de 18 limpiar DUI (para ocultarlo y evitar validaciones)
+    if (edadLocal !== null && edadLocal < 18 && form.dui) {
+      setForm((f) => ({ ...f, dui: "" }));
+    }
+
+    // si se escribió edad manual y es menor a 18, asegurar que DUI se limpie
+    if (!form.fecha_nacimiento && form.edad !== "" && form.edad !== null) {
+      const n = Number(form.edad);
+      if (!Number.isNaN(n) && n < 18 && form.dui) {
+        setForm((f) => ({ ...f, dui: "" }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.fecha_nacimiento, form.edad, edadLocal]);
+
   // valida antes de enviar
   const validarAntesDeEnviar = () => {
     if (!form.nombre || !form.apellido) {
       setError("Nombre y Apellido son obligatorios.");
+      return false;
+    }
+    // sexo obligatorio (M/F/O/U)
+    if (!form.sexo || !/^[MFOU]$/.test(String(form.sexo).toUpperCase())) {
+      setError("Seleccione el sexo del paciente.");
       return false;
     }
     // debe existir fecha_nacimiento o edad (al menos una)
@@ -146,16 +196,10 @@ export default function Pacientes() {
       setError("Ingrese Fecha de Nacimiento o Edad.");
       return false;
     }
-    // si edadLocal >= 18 entonces DUI obligatorio y formato correcto
-    if (edadLocal !== null && edadLocal >= 18) {
-      if (!form.dui) {
-        setError("DUI requerido para mayores de 18 años.");
-        return false;
-      }
-      if (!/^\d{8}-\d{1}$/.test(form.dui)) {
-        setError("Formato de DUI inválido. Debe ser ########-#.");
-        return false;
-      }
+    // DUI es opcional; si se proporciona, validar formato
+    if (form.dui && !/^\d{8}-\d{1}$/.test(form.dui)) {
+      setError("Formato de DUI inválido. Debe ser ########-#.");
+      return false;
     }
     // teléfono opcional pero si hay verificar formato
     if (form.telefono && !/^\d{4}-\d{4}$/.test(form.telefono)) {
@@ -177,17 +221,18 @@ export default function Pacientes() {
       // preparar body (misma lógica que el backend esperaba)
       const body = { nombre: form.nombre, apellido: form.apellido, telefono: form.telefono };
 
-      // fecha vs edad
-      if (form.fecha_nacimiento) {
-        body.fecha_nacimiento = form.fecha_nacimiento;
-      } else if (form.edad !== "" && typeof form.edad !== "undefined") {
+      // Siempre incluir fecha_nacimiento en el cuerpo: null si fue borrada
+      body.fecha_nacimiento = form.fecha_nacimiento ? form.fecha_nacimiento : null;
+      // Si no hay fecha, enviar edad (si existe)
+      if (!body.fecha_nacimiento && form.edad !== "" && typeof form.edad !== "undefined") {
         body.edad = Number(form.edad);
       }
 
-      // DUI: solo si edadLocal >= 18
-      if (edadLocal !== null && edadLocal >= 18 && form.dui) {
-        body.dui = form.dui;
-      }
+      // DUI es opcional: sólo enviarlo si el usuario lo puso
+      if (form.dui) body.dui = form.dui;
+
+      // sexo (obligatorio)
+      body.sexo = form.sexo;
 
       if (mode === "add") {
         const res = await fetch("http://localhost:5000/api/pacientes/", {
@@ -247,6 +292,7 @@ export default function Pacientes() {
       apellido: p.apellido || "",
       fecha_nacimiento: p.fecha_nacimiento ? p.fecha_nacimiento.split("T")[0] : "",
       edad: p.fecha_nacimiento ? "" : (p.edad ?? ""),
+      sexo: p.sexo ? String(p.sexo).toUpperCase() : (p.sexo ?? ""),
       dui: p.dui ?? "",
       telefono: p.telefono ?? ""
     });
@@ -262,6 +308,7 @@ export default function Pacientes() {
       apellido: p.apellido || "",
       fecha_nacimiento: p.fecha_nacimiento ? p.fecha_nacimiento.split("T")[0] : "",
       edad: p.fecha_nacimiento ? "" : (p.edad ?? ""),
+      sexo: p.sexo ? String(p.sexo).toUpperCase() : (p.sexo ?? ""),
       dui: p.dui ?? "",
       telefono: p.telefono ?? ""
     });
@@ -302,9 +349,17 @@ export default function Pacientes() {
   const listaFiltrada = pacientes.filter((p) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
+
+    // Normalizar DUI para buscar tanto con guion como sin guion
+    const duiRaw = p.dui ? String(p.dui).toLowerCase() : "";
+    const duiDigits = duiRaw.replace(/\D/g, "");
+    const qDigits = q.replace(/\D/g, "");
+
     return (
       (p.nombre && p.nombre.toLowerCase().includes(q)) ||
-      (p.apellido && p.apellido.toLowerCase().includes(q))
+      (p.apellido && p.apellido.toLowerCase().includes(q)) ||
+      (duiRaw && duiRaw.includes(q)) ||
+      (qDigits && duiDigits && duiDigits.includes(qDigits))
     );
   });
 
@@ -375,6 +430,7 @@ export default function Pacientes() {
                 <th>ID</th>
                 <th>Nombre</th>
                 <th>Apellido</th>
+                <th>Sexo</th>
                 <th>Edad</th>
                 <th>Fecha Nac.</th>
                 <th>DUI</th>
@@ -385,11 +441,11 @@ export default function Pacientes() {
             <tbody>
   {loading ? (
     <tr>
-      <td colSpan="8" className="text-center">Cargando...</td>
+      <td colSpan="9" className="text-center">Cargando...</td>
     </tr>
   ) : listaFiltrada.length === 0 ? (
     <tr>
-      <td colSpan="8" className="text-center text-muted">No hay pacientes registrados</td>
+      <td colSpan="9" className="text-center text-muted">No hay pacientes registrados</td>
     </tr>
   ) : (
     listaFiltrada.map((p) => (
@@ -397,6 +453,7 @@ export default function Pacientes() {
         <td>{p.id_paciente}</td>
         <td>{p.nombre}</td>
         <td>{p.apellido}</td>
+  <td>{sexoLabel(p.sexo)}</td>
         <td>{(p.edad || p.edad === 0) ? p.edad : "-"}</td>
         <td>{p.fecha_nacimiento ? formatDateDDMMYYYY(p.fecha_nacimiento) : "-"}</td>
         <td>{p.dui || "-"}</td>
@@ -514,6 +571,23 @@ export default function Pacientes() {
                   />
                 </div>
 
+                <div className="col-md-6 mb-3">
+                  <label className="form-label">Sexo *</label>
+                  <select
+                    name="sexo"
+                    className="form-select"
+                    value={form.sexo}
+                    onChange={handleChange}
+                    disabled={mode === "view"}
+                    required
+                  >
+                    <option value="">-- Seleccione --</option>
+                    <option value="M">Masculino</option>
+                    <option value="F">Femenino</option>
+                    <option value="U">No especificado</option>
+                  </select>
+                </div>
+
                 {/* Si no hay fecha, mostrar campo edad editable (solo en add/edit) */}
                 {!form.fecha_nacimiento && (
                   <div className="col-md-6 mb-3">
@@ -548,7 +622,6 @@ export default function Pacientes() {
                       onChange={handleChange}
                       placeholder="########-#"
                       disabled={mode === "view"}
-                      required={mode !== "view"}
                     />
                   </div>
                 )}
