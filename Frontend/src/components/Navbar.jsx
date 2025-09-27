@@ -1,7 +1,8 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const raw = localStorage.getItem("user");
   const user = raw ? JSON.parse(raw) : null;
 
@@ -41,7 +42,7 @@ export default function Navbar() {
         <li className="nav-item mb-2">
           <Link
             to="/pacientes"
-            className="nav-link d-flex align-items-center text-dark py-2 custom-link"
+            className={`nav-link d-flex align-items-center text-dark py-2 custom-link ${location.pathname.startsWith('/pacientes') ? 'active' : ''}`}
           >
             <i className="bi bi-people-fill fs-4 me-3"></i>
             Pacientes
@@ -50,7 +51,7 @@ export default function Navbar() {
         <li className="nav-item mb-2">
           <Link
             to="/citas"
-            className="nav-link d-flex align-items-center text-dark py-2 custom-link"
+            className={`nav-link d-flex align-items-center text-dark py-2 custom-link ${location.pathname.startsWith('/citas') ? 'active' : ''}`}
           >
             <i className="bi bi-calendar-check fs-4 me-3"></i>
             Citas
@@ -59,7 +60,7 @@ export default function Navbar() {
         <li className="nav-item mb-2">
           <Link
             to="/examenes"
-            className="nav-link d-flex align-items-center text-dark py-2 custom-link"
+            className={`nav-link d-flex align-items-center text-dark py-2 custom-link ${location.pathname.startsWith('/examenes') ? 'active' : ''}`}
           >
             <i className="bi bi-file-earmark-text fs-4 me-3"></i>
             Exámenes
@@ -68,8 +69,8 @@ export default function Navbar() {
         <li className="nav-item mb-2">
           <Link
             to="/inventario"
-            className="nav-link d-flex align-items-center text-dark py-2 custom-link"
-          >
+            className={`nav-link d-flex align-items-center text-dark py-2 custom-link ${location.pathname.startsWith('/inventario') ? 'active' : ''}`}
+          > 
             <i className="bi bi-cart-check fs-4 me-3"></i>
             Inventario
           </Link> 
@@ -79,7 +80,7 @@ export default function Navbar() {
         <li className="nav-item mb-2">
           <Link
             to="/estadisticas"
-            className="nav-link d-flex align-items-center text-dark py-2 custom-link"
+            className={`nav-link d-flex align-items-center text-dark py-2 custom-link ${location.pathname.startsWith('/estadisticas') ? 'active' : ''}`}
           >
             <i className="bi bi-bar-chart-line fs-4 me-3"></i>
             Estadísticas
@@ -93,8 +94,13 @@ export default function Navbar() {
       <div className="mt-auto">
         {user && (
           <div className="d-flex align-items-center mb-3">
-            <i className="bi bi-person-circle fs-4 me-2" style={{ color: "#00C2CC" }}></i>
-            <span>{user.nombre || user.nombre_usuario}</span>
+            <Link
+              to="/administrador"
+              className={`d-flex align-items-center text-dark p-2 nav-link custom-link ${location.pathname.startsWith('/administrador') ? 'active' : ''}`}
+            >
+              <i className="bi bi-person-circle fs-4 me-2"></i>
+              <span>{user.nombre || user.nombre_usuario}</span>
+            </Link>
           </div>
         )}
         {user ? (
@@ -128,6 +134,26 @@ export default function Navbar() {
           }
           .custom-link:hover i {
             color: #00C2CC !important;
+          }
+          /* active state: more specific to override Bootstrap defaults */
+          .nav-pills .nav-link.custom-link.active,
+          .nav-pills .custom-link.active {
+            background-color: #00C2CC !important;
+            color: #ffffff !important;
+          }
+          .nav-pills .nav-link.custom-link.active i,
+          .nav-pills .custom-link.active i {
+            color: #ffffff !important;
+          }
+          /* also ensure links outside .nav-pills (user area) get the same active styling */
+          .custom-link.active,
+          .mt-auto .custom-link.active {
+            background-color: #00C2CC !important;
+            color: #ffffff !important;
+          }
+          .custom-link.active i,
+          .mt-auto .custom-link.active i {
+            color: #ffffff !important;
           }
         `}
       </style>

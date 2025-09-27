@@ -9,6 +9,7 @@ import FichaPaciente from "./Pacientes/FichaPaciente";
 import Inventario from "./Inventario/Inventario";
 import Producto from "./Inventario/Producto";
 import Administrador from "./components/Administrador";
+import Recuperar from "./components/Recuperar";
 import './App.css'
 
 function App() {
@@ -47,12 +48,13 @@ function App() {
 
 function InnerApp() {
   const location = useLocation();
-  const showNavbar = location.pathname !== "/";
+  const showNavbar = location.pathname !== "/" && location.pathname !== "/recuperar";
 
   return (
     <>
       {showNavbar && <Navbar />}
       <Routes>
+        <Route path="/recuperar" element={<Recuperar />} />
         <Route path="/" element={<LoginPage />} />
         {/* Solo admin (rol 0) puede ver estas rutas */}
         <Route element={<ProtectedRoute allowedPrivileges={[0]} />}>
