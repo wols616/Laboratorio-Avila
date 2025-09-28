@@ -34,7 +34,7 @@ const LoginPage = () => {
                     className="text-center"
                     style={{ maxWidth: "420px", fontSize: "1.15rem", lineHeight: "1.6", color: "#00C2CC", fontWeight: "bold" }}
                 >
-                    El mejor laboratorio clínico de Ahuachapan.
+                    Comprometidos con tu Salud
                 </p>
         </div>
 
