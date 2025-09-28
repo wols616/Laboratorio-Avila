@@ -46,7 +46,7 @@ Para efectos de depuración: imprime la contraseña recibida y su hash (solo par
 
             // Login normal: genera el token
 
-            
+
             const payload = {
                 id_usuario: user.id_usuario,
                 nombre_usuario: user.nombre_usuario,
@@ -156,7 +156,9 @@ exports.recuperarPassword = (req, res) => {
         if (err) return res.status(500).json({ message: "Error en el servidor." });
 
         if (results.length === 0) {
-            return res.status(200).json({ message: "Si el usuario existe, se enviarán instrucciones." });
+            return res.status(200).json({
+                message: "Si el usuario existe, se enviarán instrucciones."
+            });
         }
 
         const usuario = results[0];
@@ -213,10 +215,19 @@ exports.recuperarPassword = (req, res) => {
                     }
 
                     res.status(200).json({
-                        message: "Si el usuario existe, se enviará una contraseña temporal al correo registrado."
+                        message: "Si el usuario existe, se enviará una contraseña temporal al correo registrado.",
+                        correoOfuscado: ofuscarCorreo(usuario.correo)
                     });
                 });
             }
         );
     });
 };
+
+function ofuscarCorreo(correo) {
+    // Ejemplo: p****a@c****o.com
+    const [user, domain] = correo.split("@");
+    const userMasked = user[0] + "****" + user[user.length - 1];
+    const domainMasked = domain[0] + "****" + domain[domain.length - 5] + domain.slice(-4);
+    return `${userMasked}@${domainMasked}`;
+}
