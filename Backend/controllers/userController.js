@@ -1,6 +1,8 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.login = (req, res) => {
@@ -61,7 +63,8 @@ Para efectos de depuración: imprime la contraseña recibida y su hash (solo par
                     apellido: user.apellido,
                     nombre_usuario: user.nombre_usuario,
                     rol: user.rol,
-                    estado: user.estado
+                    estado: user.estado,
+                    requiereCambioPassword: user.requiere_cambio_password
                 }
             });
         }
@@ -133,7 +136,7 @@ exports.changePassword = (req, res) => {
         // Hashear la nueva contraseña
         bcrypt.hash(newPassword, 10, (err2, hashed) => {
             if (err2) return res.status(500).json({ message: 'Error al encriptar la contraseña', error: err2 });
-            db.query('UPDATE usuario SET password = ?, updated_at = NOW() WHERE id_usuario = ?', [hashed, userId], (err3) => {
+            db.query('UPDATE usuario SET password = ?, requiere_cambio_password = 0, updated_at = NOW() WHERE id_usuario = ?', [hashed, userId], (err3) => {
                 if (err3) return res.status(500).json({ message: 'Error al actualizar contraseña', error: err3 });
                 return res.status(200).json({ message: 'Contraseña actualizada correctamente' });
             });
@@ -141,5 +144,68 @@ exports.changePassword = (req, res) => {
     });
 };
 
+// Recuperar contraseña (sin autenticación)
+exports.recuperarPassword = (req, res) => {
+    const { nombre_usuario } = req.body;
 
+    if (!nombre_usuario) {
+        return res.status(400).json({ message: "El nombre de usuario es obligatorio." });
+    }
 
+    db.query("SELECT * FROM usuario WHERE nombre_usuario = ?", [nombre_usuario], async (err, results) => {
+        if (err) return res.status(500).json({ message: "Error en el servidor." });
+
+        if (results.length === 0) {
+            return res.status(200).json({ message: "Si el usuario existe, se enviarán instrucciones." });
+        }
+
+        const usuario = results[0];
+
+        // Generar contraseña temporal segura
+        const tempPassword = crypto.randomBytes(6).toString("base64").replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+        // Actualizar la contraseña y marcar que requiere cambio
+        db.query(
+            "UPDATE usuario SET password = ?, requiere_cambio_password = 1, updated_at = NOW() WHERE id_usuario = ?",
+            [hashedPassword, usuario.id_usuario],
+            (updateErr) => {
+                if (updateErr) {
+                    return res.status(500).json({ message: "Error actualizando la contraseña." });
+                }
+
+                // Configuración de Nodemailer
+                const transporter = nodemailer.createTransport({
+                    service: "gmail",
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS,
+                    },
+                });
+
+                const mailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: usuario.correo,
+                    subject: "Recuperación de Contraseña",
+                    html: `
+                        <h3>Recuperación de contraseña</h3>
+                        <p>Hola ${usuario.nombre_usuario}, tu nueva contraseña temporal es:</p>
+                        <p style="font-size:1.2em;font-weight:bold;">${tempPassword}</p>
+                        <p>Debes cambiarla al iniciar sesión.</p>
+                    `,
+                };
+
+                transporter.sendMail(mailOptions, (error) => {
+                    if (error) {
+                        console.error("Error enviando correo:", error);
+                        return res.status(500).json({ message: "Error al enviar el correo." });
+                    }
+
+                    res.status(200).json({
+                        message: "Si el usuario existe, se enviará una contraseña temporal al correo registrado."
+                    });
+                });
+            }
+        );
+    });
+};
