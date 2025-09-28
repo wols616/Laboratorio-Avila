@@ -188,10 +188,21 @@ exports.recuperarPassword = (req, res) => {
                     to: usuario.correo,
                     subject: "Recuperación de Contraseña",
                     html: `
-                        <h3>Recuperación de contraseña</h3>
-                        <p>Hola ${usuario.nombre_usuario}, tu nueva contraseña temporal es:</p>
-                        <p style="font-size:1.2em;font-weight:bold;">${tempPassword}</p>
-                        <p>Debes cambiarla al iniciar sesión.</p>
+                        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; background: #fafcff;">
+                            <h2 style="color: #00C2CC; text-align: center;">Recuperación de contraseña</h2>
+                            <p>Hola <b>${usuario.nombre_usuario}</b>,</p>
+                            <p>Se ha generado una nueva contraseña temporal para tu cuenta. Utilízala para iniciar sesión y cámbiala inmediatamente por tu seguridad.</p>
+                            <ul>
+                                <li><b>Nombre de usuario:</b> ${usuario.nombre_usuario}</li>
+                            </ul>
+                            <div style="margin: 24px 0; padding: 16px; background: #f1f8fa; border-radius: 6px; text-align: center;">
+                                <span style="font-size: 1.1em; color: #222;">Contraseña temporal:</span><br>
+                                <span style="font-size: 1.3em; font-weight: bold; letter-spacing: 2px; color: #00C2CC;">${tempPassword}</span>
+                            </div>
+                            <p style="color: #888; font-size: 0.95em;">Si no solicitaste este cambio, ignora este mensaje o contacta al administrador.</p>
+                            <hr style="margin: 24px 0;">
+                            <p style="font-size: 0.9em; color: #aaa; text-align: center;">&copy; ${new Date().getFullYear()} Sistema de Gestión</p>
+                        </div>
                     `,
                 };
 
