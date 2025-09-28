@@ -9,6 +9,17 @@ const Recuperar = () => {
 
     const handleRecuperar = (e) => {
         e.preventDefault();
+
+        if (!navigator.onLine) {
+            Swal.fire({
+                title: "Sin conexión",
+                text: "Debes estar conectado a internet para recuperar tu contraseña.",
+                icon: "warning",
+                showConfirmButton: true
+            });
+            return;
+        }
+
         if (!nombreUsuario) {
             Swal.fire({
                 title: "Error",
