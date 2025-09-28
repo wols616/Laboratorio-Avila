@@ -7,6 +7,15 @@ const Recuperar = () => {
     const [nombreUsuario, setNombreUsuario] = useState("");
     const navigate = useNavigate();
 
+    // Función para centrar el contenido vertical y horizontalmente
+    const containerStyle = {
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        background: "#f7fafd"
+    };
+
     const handleRecuperar = (e) => {
         e.preventDefault();
 
@@ -31,10 +40,12 @@ const Recuperar = () => {
             return;
         }
         axios.post("http://localhost:5000/api/users/recuperar-password", { nombre_usuario: nombreUsuario })
-            .then(() => {
+            .then((res) => {
+                // Espera que el backend devuelva { correoOfuscado: "p****a@c****o.com" }
+                const correo = res.data.correoOfuscado || "tu correo registrado";
                 Swal.fire({
                     title: "¡Listo!",
-                    text: "Si el usuario existe, recibirás instrucciones para recuperar tu contraseña.",
+                    html: `Si el usuario existe, recibirás instrucciones para recuperar tu contraseña en <b>${correo}</b>.`,
                     icon: "success",
                     showConfirmButton: true
                 }).then(() => {
@@ -53,8 +64,8 @@ const Recuperar = () => {
     };
 
     return (
-        <div className="container-fluid d-flex justify-content-center align-items-center px-2">
-            <div className="w-100" style={{ maxWidth: 400 }}>
+        <div style={containerStyle}>
+            <div className="w-100 shadow" style={{ maxWidth: 400, background: "#fff", borderRadius: 16, padding: 32 }}>
                 <h2 className="fw-bold mb-4 text-center" style={{ color: "#00C2CC" }}>
                     Recuperar Contraseña
                 </h2>
