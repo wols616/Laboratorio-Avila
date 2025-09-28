@@ -1,79 +1,66 @@
 const db = require("../config/db");
 const bcrypt = require("bcryptjs");
-const generatePassword = require('generate-password');
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
 
 exports.login = (req, res) => {
-    const { correo, contrasena } = req.body;
+    const { nombre_usuario, contrasena } = req.body;
 
-    
-    if (!correo || !contrasena) {
-        return res.status(400).json({ message: "Correo y contraseña son requeridos" });
+    if (!nombre_usuario || !contrasena) {
+        return res.status(400).json({ message: "Nombre de usuario y contraseña son requeridos" });
     }
 
+    /*
+Para efectos de depuración: imprime la contraseña recibida y su hash (solo para pruebas), les puede ayudar para su usuario
+     bcrypt.hash(contrasena, 10, (err, hash) => {
+    if (err) {
+        console.error("Error al hashear la contraseña:", err);
+    } else {
+        console.log("Contraseña recibida:", contrasena);
+        console.log("Contraseña hasheada:", hash);
+    }
+});
+*/
+
     db.query(
-        "SELECT * FROM usuario WHERE correo = ?",
-        [correo],
+        "SELECT * FROM usuario WHERE nombre_usuario = ?",
+        [nombre_usuario],
         async (err, results) => {
             if (err) return res.status(500).json({ message: "Error en el servidor" });
-            if (results.length === 0) return res.status(401).json({ message: "Correo o contraseña incorrectos" });
+            if (results.length === 0) return res.status(401).json({ message: "Nombre de usuario o contraseña incorrectos" });
 
             const user = results[0];
 
             // Validar si la cuenta está desactivada
-            if (user.estado === 0) {
+            if (user.estado == 0) {
                 return res.status(403).json({
-                    message: "Tu cuenta está desactivada. Por favor, contacta al administrador al correo aplicaciondediagnosticodetea@gmail.com"
+                    message: "Tu cuenta está desactivada. Por favor, contacta al administrador al correo maicol.monge@catolica.edu.sv"
                 });
             }
 
             // Validar contraseña
-            const match = await bcrypt.compare(contrasena, user.contrasena);
+            const match = await bcrypt.compare(contrasena, user.password);
             if (!match) return res.status(401).json({ message: "Correo o contraseña incorrectos" });
 
-            // Si requiere cambio de contraseña
-            if (user.requiere_cambio_contrasena === 1) {
-                const payload = {
-                    id_usuario: user.id_usuario,
-                    correo: user.correo,
-                    privilegio: user.privilegio
-                };
-                const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
-
-
-                return res.status(200).json({
-                    message: "Contraseña genérica detectada, debe cambiarla",
-                    requirePasswordChange: true,
-                    token, // <-- aquí va el JWT
-                    user: {
-                        id_usuario: user.id_usuario,
-                        correo: user.correo
-                    }
-                });
-            }
-
             // Login normal: genera el token
+
+            
             const payload = {
                 id_usuario: user.id_usuario,
-                correo: user.correo,
-                privilegio: user.privilegio
+                nombre_usuario: user.nombre_usuario,
+                rol: user.rol
             };
             const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
 
             return res.status(200).json({
                 message: "Inicio de sesión exitoso",
-                requirePasswordChange: false,
                 token, // <-- aquí va el JWT
                 user: {
                     id_usuario: user.id_usuario,
-                    nombres: user.nombres,
-                    apellidos: user.apellidos,
-                    direccion: user.direccion,
-                    telefono: user.telefono,
-                    correo: user.correo,
-                    privilegio: user.privilegio,
-                    imagen: user.imagen,
+                    nombre: user.nombre,
+                    apellido: user.apellido,
+                    nombre_usuario: user.nombre_usuario,
+                    rol: user.rol,
                     estado: user.estado
                 }
             });
@@ -81,78 +68,75 @@ exports.login = (req, res) => {
     );
 };
 
+//Metodo temporal, se espera que ya no se use
+// Registrar según la tabla `usuario` proporcionada:
+// Campos esperados en req.body: nombre, apellido, nombre_usuario, password (o contrasena), rol, estado (opcional)
 exports.registrar = (req, res) => {
-    const { nombres, apellidos, direccion, telefono, correo, privilegio, imagen, fecha_nacimiento, sexo, especialidad } = req.body;
+    const { nombre, apellido, nombre_usuario, password, rol, estado, contrasena } = req.body;
+    const pwd = password || contrasena; // aceptar ambas variantes por compatibilidad
 
-    if (!nombres || !apellidos || !direccion || !telefono || !correo || privilegio === undefined) {
-        return res.status(400).json({ message: "Todos los campos requeridos deben ser enviados" });
+    if (!nombre || !apellido || !nombre_usuario || !pwd || rol === undefined) {
+        return res.status(400).json({ message: "Los campos nombre, apellido, nombre_usuario, password y rol son requeridos" });
     }
 
-    if (![0, 1].includes(Number(privilegio))) {
-        return res.status(400).json({ message: "Privilegio no válido" });
-    }
+    // Verificar duplicado de nombre_usuario
+    db.query("SELECT id_usuario FROM usuario WHERE nombre_usuario = ?", [nombre_usuario], (err, results) => {
+        if (err) return res.status(500).json({ message: "Error en el servidor", error: err });
+        if (results.length > 0) return res.status(409).json({ message: "El nombre de usuario ya está registrado" });
 
-    // Validaciones adicionales según privilegio
-    if (Number(privilegio) === 1) {
-        if (!fecha_nacimiento || !sexo) {
-            return res.status(400).json({ message: "Fecha de nacimiento y sexo son requeridos para paciente." });
-        }
-        if (!['M', 'F'].includes(sexo)) {
-            return res.status(400).json({ message: "Sexo debe ser 'M' o 'F'." });
-        }
-    }
-    if (Number(privilegio) === 0) {
-        if (!especialidad) {
-            return res.status(400).json({ message: "Especialidad es requerida para especialista." });
-        }
-    }
+        // Hashear la contraseña
+        bcrypt.hash(pwd, 10, (err, hashedPassword) => {
+            if (err) return res.status(500).json({ message: "Error al encriptar la contraseña", error: err });
 
-    // Generar contraseña genérica aleatoria y segura
-    const contrasenaGenerica = generatePassword.generate({
-        length: 15,
-        numbers: true,
-        symbols: true,
-        uppercase: true,
-        lowercase: true,
-        strict: true
-    });
-
-    bcrypt.hash(contrasenaGenerica, 10, (err, hashedContrasenaGenerica) => {
-        if (err) {
-            return res.status(500).json({ message: "Error al encriptar la contraseña", error: err });
-        }
-
-        const query = "INSERT INTO usuario (nombres, apellidos, direccion, telefono, correo, contrasena, privilegio, imagen, estado, requiere_cambio_contrasena) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        db.query(query, [nombres, apellidos, direccion, telefono, correo, hashedContrasenaGenerica, privilegio, imagen || null, 1, 1], (err, results) => {
-            if (err) {
-                if (err.code === "ER_DUP_ENTRY") {
-                    return res.status(409).json({ message: "El correo ya está registrado" });
+            const query = `INSERT INTO usuario (nombre, apellido, nombre_usuario, password, rol, estado, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`;
+            const estadoVal = typeof estado !== 'undefined' ? String(estado) : '1';
+            db.query(query, [nombre, apellido, nombre_usuario, hashedPassword, String(rol), estadoVal], (err, result) => {
+                if (err) {
+                    // manejar duplicados por clave única si existen
+                    if (err.code === 'ER_DUP_ENTRY') {
+                        return res.status(409).json({ message: 'El nombre de usuario ya está registrado' });
+                    }
+                    return res.status(500).json({ message: 'Error en el servidor', error: err });
                 }
-                return res.status(500).json({ message: "Error en el servidor", error: err });
-            }
 
-            const id_usuario = results.insertId;
+                const id_usuario = result.insertId;
+                return res.status(201).json({ message: 'Usuario registrado correctamente', id_usuario });
+            });
+        });
+    });
+};
 
-            // Insertar en tabla paciente o especialista según privilegio
-            if (Number(privilegio) === 1) {
-                const pacienteQuery = "INSERT INTO paciente (id_usuario, fecha_nacimiento, sexo) VALUES (?, ?, ?)";
-                db.query(pacienteQuery, [id_usuario, fecha_nacimiento, sexo], (err) => {
-                    if (err) {
-                        return res.status(500).json({ message: "Error al registrar paciente", error: err });
-                    }
-                    enviarCorreoBienvenida(correo, contrasenaGenerica, nombres, apellidos);
-                    return res.status(201).json({ message: "Paciente registrado exitosamente", userId: id_usuario });
-                });
-            } else if (Number(privilegio) === 0) {
-                const especialistaQuery = "INSERT INTO especialista (id_usuario, especialidad) VALUES (?, ?)";
-                db.query(especialistaQuery, [id_usuario, especialidad], (err) => {
-                    if (err) {
-                        return res.status(500).json({ message: "Error al registrar especialista", error: err });
-                    }
-                    enviarCorreoBienvenida(correo, contrasenaGenerica, nombres, apellidos);
-                    return res.status(201).json({ message: "Especialista registrado exitosamente", userId: id_usuario });
-                });
-            }
+// Cambiar contraseña del usuario autenticado
+exports.changePassword = (req, res) => {
+    const userId = req.user && req.user.id_usuario;
+    if (!userId) return res.status(401).json({ message: 'No autorizado' });
+
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        return res.status(400).json({ message: 'Se requieren currentPassword, newPassword y confirmPassword' });
+    }
+    if (newPassword !== confirmPassword) return res.status(400).json({ message: 'La nueva contraseña y la confirmación no coinciden' });
+    // Política de contraseña: mínimo 8 caracteres, al menos una mayúscula, un número y un carácter especial
+    if (newPassword.length < 8) return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 8 caracteres' });
+    const strongRe = /(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/;
+    if (!strongRe.test(newPassword)) return res.status(400).json({ message: 'La nueva contraseña debe contener al menos una mayúscula, un número y un carácter especial' });
+
+    // Obtener usuario actual
+    db.query('SELECT * FROM usuario WHERE id_usuario = ?', [userId], async (err, results) => {
+        if (err) return res.status(500).json({ message: 'Error en el servidor', error: err });
+        if (results.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
+
+        const user = results[0];
+        const match = await bcrypt.compare(currentPassword, user.password);
+        if (!match) return res.status(401).json({ message: 'Contraseña actual incorrecta' });
+
+        // Hashear la nueva contraseña
+        bcrypt.hash(newPassword, 10, (err2, hashed) => {
+            if (err2) return res.status(500).json({ message: 'Error al encriptar la contraseña', error: err2 });
+            db.query('UPDATE usuario SET password = ?, updated_at = NOW() WHERE id_usuario = ?', [hashed, userId], (err3) => {
+                if (err3) return res.status(500).json({ message: 'Error al actualizar contraseña', error: err3 });
+                return res.status(200).json({ message: 'Contraseña actualizada correctamente' });
+            });
         });
     });
 };
