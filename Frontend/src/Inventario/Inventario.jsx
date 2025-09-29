@@ -320,6 +320,30 @@ const handleDelete = async (id) => {
     currentPage * perPage
   );
 
+  // Alertas dinámicas (manteniendo diseño actual)
+  const daysUntil = (iso) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    const now = new Date();
+    const diff = d.setHours(0, 0, 0, 0) - now.setHours(0, 0, 0, 0);
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const critical = productos.filter(
+    (p) => typeof p.stock !== "undefined" && Number(p.stock) <= 0
+  );
+  const lowStock = productos.filter(
+    (p) =>
+      typeof p.stock !== "undefined" &&
+      typeof p.stock_minimo !== "undefined" &&
+      Number(p.stock) > 0 &&
+      Number(p.stock) <= Number(p.stock_minimo)
+  );
+  const expiring = productos.filter((p) => {
+    const d = daysUntil(p.fecha_vencimiento);
+    return d !== null && d <= 30 && d >= 0;
+  });
+
   return (
     <div className="d-flex" style={{ backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
       {/* Sidebar ya está en otra vista */}
@@ -457,24 +481,66 @@ const handleDelete = async (id) => {
         </nav>
 
 
-           {/* Alertas y advertencias */}
+           {/* Alertas y advertencias (dinámicas, mismo diseño) */}
             <div className="alertas mt-3 card">
-              <div className="row">
+              <div className="row g-3 p-3">
                 <div className="col-md-6">
                   <h6 className="fw-bold text-danger">Alertas del Sistema</h6>
-                  <div className="bg-danger bg-opacity-10 p-2 rounded text-danger">
-                    <strong>Stock por agotar</strong>
-                    <br />
-                    Alcohol Etílico - Stock: 1 unidad
-                  </div>
+                  {critical.length === 0 && lowStock.length === 0 ? (
+                    <div className="bg-light p-2 rounded text-muted">
+                      No hay alertas de stock
+                    </div>
+                  ) : (
+                    <>
+                      {critical.slice(0, 3).map((p) => (
+                        <div
+                          key={`crit-${p.id_insumo}`}
+                          className="bg-danger bg-opacity-10 p-2 rounded text-danger mb-2"
+                        >
+                          <strong>{p.nombre_insumo}</strong>
+                          <br />
+                          Stock agotado: {p.stock}
+                        </div>
+                      ))}
+                      {lowStock.slice(0, 3 - Math.min(critical.length, 3)).map((p) => (
+                        <div
+                          key={`low-${p.id_insumo}`}
+                          className="bg-danger bg-opacity-10 p-2 rounded text-danger mb-2"
+                        >
+                          <strong>{p.nombre_insumo}</strong>
+                          <br />
+                          Stock bajo: {p.stock} (mín {p.stock_minimo})
+                        </div>
+                      ))}
+                      {critical.length + lowStock.length > 3 && (
+                        <div className="small text-muted">y {critical.length + lowStock.length - 3} más...</div>
+                      )}
+                    </>
+                  )}
                 </div>
                 <div className="col-md-6">
                   <h6 className="fw-bold text-warning">Advertencias</h6>
-                  <div className="bg-warning bg-opacity-25 p-2 rounded text-dark">
-                    <strong>Próximo a Vencer</strong>
-                    <br />
-                    Reactivo Glucosa - Vence en 15 días
-                  </div>
+                  {expiring.length === 0 ? (
+                    <div className="bg-warning bg-opacity-25 p-2 rounded text-dark">
+                      Sin advertencias
+                    </div>
+                  ) : (
+                    <>
+                      {expiring.slice(0, 3).map((p) => (
+                        <div
+                          key={`exp-${p.id_insumo}`}
+                          className="bg-warning bg-opacity-25 p-2 rounded text-dark mb-2"
+                        >
+                          <strong>{p.nombre_insumo}</strong>
+                          <br />
+                          Vence en {daysUntil(p.fecha_vencimiento)} días
+                        </div>
+                      ))}
+                      {expiring.length > 3 && (
+                        <div className="small text-muted">y {expiring.length - 3} más...</div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
